@@ -13,7 +13,8 @@ def file_config_exists():
 
 def parse_config():
     parser = ConfigParser()
-    parser.readfp(CONFIG_FILE)
+    with open(CONFIG_FILE) as f:
+        parser.readfp(f)
 
     sd_card = parser.get('devices', 'sd_card')
     thumb_drive = parser.get('devices', 'thumb_drive')

@@ -24,6 +24,8 @@ def main(args):
     if file_config_exists():
         print 'Using the config file!'
         sd_card, thumb_drive, ssid, psk = parse_config()
+        sd_card = Device(sd_card)
+        thumb_drive = Device(thumb_drive)
     else:
         print 'Prompting for info. No prompt written for wireless, sorry.'
         sd_card, thumb_drive = devices_prompt(devices)

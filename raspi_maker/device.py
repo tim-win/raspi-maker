@@ -37,6 +37,7 @@ class Device(object):
                 ['sudo', 'umount', mount],
                 stdout=PIPE,
                 stderr=STDOUT)  # stdout=PIPE makes this line blocking.
+            p.communicate()
         print True
 
     @property
