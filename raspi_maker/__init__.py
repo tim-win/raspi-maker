@@ -18,22 +18,28 @@ def main(args):
 
     check_for_root_device(sd_card.blk_id, thumb_drive.blk_id)
 
-    print 'Checking for local image'
-    disk_image = check_image()
-    if disk_image:
-        print 'Image found: {0}'.format(disk_image)
-    else:
-        print 'Fetching Image Remotely'
-        raise NotImplemented('I didnt write this yet...')
+    # print 'Checking for local image'
+    # disk_image = check_image()
+    # if disk_image:
+    #     print 'Image found: {0}'.format(disk_image)
+    # else:
+    #     print 'Fetching Image Remotely'
+    #     raise NotImplemented('I didnt write this yet...')
 
-    print 'Clearing SD Card: {0}'.format(str(sd_card))
-    clear_device(sd_card)
+    # print 'Clearing SD Card: {0}'.format(str(sd_card))
+    # clear_device(sd_card)
 
-    print 'Clearing Thumb Drive: {0}'.format(str(thumb_drive))
-    clear_device(thumb_drive)
+    # print 'Clearing Thumb Drive: {0}'.format(str(thumb_drive))
+    # clear_device(thumb_drive)
 
-    print 'Flashing the Image to the thumb_drive.'
-    flash_image(disk_image, thumb_drive)
+    # print 'Flashing the Image to the thumb_drive.'
+    # flash_image(disk_image, thumb_drive)
 
+    # print 'Sizing up the boot partition on the thumb drive'
 
+    copy_boot_partition(source=thumb_drive, target=sd_card)
+
+    # modify_boot_partition(sd_card)
+
+    # modify_root_parititon(thumb_drive)
     return 0

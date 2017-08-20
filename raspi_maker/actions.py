@@ -40,7 +40,7 @@ def clear_device(device):
     if it fails.
     """
     device.unmount_all()
-    
+
     partitions = device.partitions
 
     for partitions in reversed(xrange(1,1+len(partitions))):
@@ -62,4 +62,51 @@ def flash_image(disk_image, device):
     # why check output? because then you can do the cool
     # dd | pv | dd trick. '|pv|'' is awesome stdout.
     output = check_output(populated_cmd, shell=True)
+    print output
+
+
+@PromptOnError
+def copy_boot_partition(source, target):
+    """Copy the boot partition, including flags and file type.
+
+    SideEffects
+    -----------
+    Creates a partition on target device, with:
+        label: boot
+        size: equivalent to source device's partition 1
+        
+    """
+    boot_source = source.partition_specs(1)
+
+    mkfs_command = [
+        'sudo',
+        'parted',
+        target.path,
+        'mkpart',
+        'primary',
+        'fat16',
+        boot_souce['Start'],
+        boot_souce['End']
+    ]
+
+    # Create a placeholder partition
+    interactive_console(mkfs_command)
+
+    partition = target.partitions[0]
+
+    e2label_command = [
+        'sudo',
+        'e2label',
+        'boot'
+    ]
+
+    print 'Labelling filesystem.'
+    interactive_console(e2label_command)
+    copy_command = 'sudo dd if={source} | pv | sudo dd of={target}'
+
+    populated_cmd = cmd.format(
+        source=source.path,
+        target=target.path)
+
+    output = check_output(populated_cmd, shell=True)    
     print output
