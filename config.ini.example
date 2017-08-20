@@ -1,0 +1,7 @@
+[devices]
+sd_card=mmcblk0
+thumb_drive=sdb
+
+[wireless]
+ssid=your_ssid
+psk=your_ssid_password

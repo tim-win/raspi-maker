@@ -7,6 +7,9 @@ from .actions import polish_drive
 from .actions import update_sdcard_boot_commands
 from .cli_helpers import devices_prompt
 from .cli_helpers import print_devices
+from .cli_helpers import freestyle_prompt
+from .configuration import file_config_exists
+from .configuration import parse_config
 from .device import Device
 from .device import get_devices
 from .errors import check_for_root_device
@@ -18,7 +21,14 @@ def main(args):
 
     print_devices(devices)
     
-    sd_card, thumb_drive = devices_prompt(devices)
+    if file_config_exists():
+        print 'Using the config file!'
+        sd_card, thumb_drive, ssid, psk = parse_config()
+    else:
+        print 'Prompting for info. No prompt written for wireless, sorry.'
+        sd_card, thumb_drive = devices_prompt(devices)
+        ssid = freestyle_prompt('What is your wireless ssid?')
+        psk = freestyle_prompt('What is your wireless password?')
 
     check_for_root_device(sd_card.blk_id, thumb_drive.blk_id)
 

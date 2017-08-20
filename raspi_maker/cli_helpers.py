@@ -45,3 +45,8 @@ def devices_prompt(devices):
     elif you_sure == 'n':
         exit()
     return sd_card, thumb_drive
+
+
+def freestyle_prompt(prompt):
+    print prompt
+    return raw_input('--> ')

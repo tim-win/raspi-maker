@@ -141,7 +141,7 @@ def update_sdcard_boot_commands(device):
             'sudo',
             'sed',
             '-i',
-            "s'/mmcblk0p/sda/'",
+            "s'/mmcblk0p2/sda2/'",
             os.path.join(mount_dir, 'cmdline.txt')]
 
         print 'Modifying init command line'
@@ -163,10 +163,19 @@ def expand_second_partition(device):
     print 'Expanding the partition. Resizing isn\'t worth it. Or obvious to do.'
     resize_command = ['sudo', 'parted', device.path, 'resizepart', '2', '"-1s"']
     interactive_console(resize_command)
+
+    print 'Fixing the nibbly bits for the partition itself'
+    target_partition = device.partitions(full_paths=True)[0]
+    interactive_console(['sudo', 'e2fsck', '-f', target_partition])
+
+    print 'Fixing ext4 so it goes all the way to the end'
+    target_end = device.partition_specs(2)['End']
+    interactive_console(['sudo', 'resize2fs', target_partition, target_end])
+
     print 'Success!'
 
 
-def polish_drive(device):
+def polish_drive(device, ssid, psk):
     mount_dir = mkdtemp()
     mount_command = [
         'sudo',
@@ -208,6 +217,7 @@ def polish_drive(device):
     chown_command = [
         'sudo',
         'chown',
+        '-R',
         '1000:1000',
         os.path.join(mount_dir, 'home', 'pi', '.ssh')
     ]
@@ -221,6 +231,21 @@ def polish_drive(device):
         os.path.join(mount_dir, 'home', 'pi', '.ssh')
     ]
     interactive_console(chown_command)
+
+    if ssid and psk:
+        print 'Throwing the wireless info into the wpa_supplicant.conf'
+        supplicant = os.path.join(mount_dir, 'etc', 'wpa_supplicant', 'wpa_supplicant.conf')
+        me = os.getlogin()
+        
+        interactive_console(['sudo', 'chown', me, supplicant])
+        with open(supplicant, 'a') as f:
+            f.write('\n')
+            f.write('network={\n')
+            f.write('    ssid="{ssid}"\n'.format(ssid=ssid))
+            f.write('    psk="{psk}"\n'.format(psk=psk))
+            f.write('}\n')
+            f.write('\n')
+        interactive_console(['sudo', 'chown', '0:0', supplicant])
 
     print 'Good to go! Unmounting'
     umount_command = ['sudo', 'umount', mount_dir]
