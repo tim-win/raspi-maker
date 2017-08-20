@@ -19,7 +19,6 @@ class Device(object):
 
         self.path = '/dev/{0}'.format(blk_id)
 
-    @property
     def partitions(self, full=False):
         lsblk_output = _get_lsblk_output()
         return _get_partitions(lsblk_output, self.blk_id, full)
@@ -42,7 +41,7 @@ class Device(object):
     @property
     def mount_points(self):
         mounts = []
-        for partition in self.partitions:
+        for partition in self.partitions():
             mounts += _get_partition_mounts(partition)
         return mounts
 

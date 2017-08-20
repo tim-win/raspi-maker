@@ -159,7 +159,7 @@ def test_device_init():
 
 @mark.functional
 def test_device_partitions_property():
-    assert Device('sda').partitions
+    assert Device('sda').partitions()
 
 
 @mark.functional

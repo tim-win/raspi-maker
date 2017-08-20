@@ -41,7 +41,7 @@ def clear_device(device):
     """
     device.unmount_all()
 
-    partitions = device.partitions
+    partitions = device.partitions()
 
     for partitions in reversed(xrange(1,1+len(partitions))):
         print 'Deleting {0} partition #{1}'.format(device.path, partitions)
@@ -92,11 +92,12 @@ def copy_boot_partition(source, target):
     # Create a placeholder partition
     interactive_console(mkfs_command)
 
-    partition = target.partitions[0]
+    partition = target.partitions()[0]
 
     e2label_command = [
         'sudo',
         'e2label',
+        target.get_partitions(full=True)[0],
         'boot'
     ]
 
