@@ -19,9 +19,10 @@ class Device(object):
 
         self.path = '/dev/{0}'.format(blk_id)
 
-    def partitions(self, full=False):
+    def partitions(self, full_paths=False):
         lsblk_output = _get_lsblk_output()
-        return _get_partitions(lsblk_output, self.blk_id, full)
+        return _get_partitions(
+            lsblk_output, self.blk_id, full_paths=full_paths)
 
     def unmount_all(self):
         """Runs umount on all partitions. Regardless.

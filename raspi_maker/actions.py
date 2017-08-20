@@ -1,8 +1,16 @@
-from .debugging import PromptOnError
-from .console import console
-
+import os
+from tempfile import mkdtemp
 from subprocess import check_output
 
+from .debugging import PromptOnError
+from .console import console
+from .console import interactive_console
+
+
+def _delete_partition(device, number):
+    print 'Deleting {0} partition #{1}'.format(device.path, number)
+    console(['sudo', 'parted', device.path, 'rm', str(number)])
+    
 
 @PromptOnError
 def clear_device(device):
@@ -43,9 +51,8 @@ def clear_device(device):
 
     partitions = device.partitions()
 
-    for partitions in reversed(xrange(1,1+len(partitions))):
-        print 'Deleting {0} partition #{1}'.format(device.path, partitions)
-        console(['sudo', 'parted', device.path, 'rm', str(partitions)])
+    for partition in xrange(1,1+len(partitions)):
+        _delete_partition(device, partition)
 
     return True
 
@@ -85,8 +92,8 @@ def copy_boot_partition(source, target):
         'mkpart',
         'primary',
         'fat16',
-        boot_souce['Start'],
-        boot_souce['End']
+        boot_source['Start'],
+        boot_source['End']
     ]
 
     # Create a placeholder partition
@@ -94,20 +101,129 @@ def copy_boot_partition(source, target):
 
     partition = target.partitions()[0]
 
+    copy_command = 'sudo dd if={source} | pv | sudo dd of={target}'
+
+    populated_cmd = copy_command.format(
+        source=source.partitions(full_paths=True)[0],
+        target=target.partitions(full_paths=True)[0])
+
+    print 'Copying the boot fs over.'
+    output = check_output(populated_cmd, shell=True)    
+    print output
+
     e2label_command = [
         'sudo',
         'e2label',
-        target.get_partitions(full=True)[0],
+        target.partitions(full_paths=True)[0],
         'boot'
     ]
 
-    print 'Labelling filesystem.'
+    print 'Labeling filesystem.'
     interactive_console(e2label_command)
-    copy_command = 'sudo dd if={source} | pv | sudo dd of={target}'
 
-    populated_cmd = cmd.format(
-        source=source.path,
-        target=target.path)
 
-    output = check_output(populated_cmd, shell=True)    
-    print output
+@PromptOnError
+def update_sdcard_boot_commands(device):
+    """Make the SD Card point to the thumb drive on boot."""
+    with mkdtemp() as mount_dir:
+        boot_partition = device.partitions(full_paths=True)[0]
+        
+        mount_command = ['sudo', 'mount', boot_partition, mount_dir]
+
+        print 'Mounting SD Card partition {0} to temp directory {1}'.format(
+            boot_partition, mount_dir)
+        interactive_console(mount_command)
+
+        # Note- this sed command is what the target mounts will look like
+        # I'm not messing with the blk_ids of our devices as we know them
+        # here.
+        sed_command = [
+            'sudo',
+            'sed',
+            '-i',
+            "s'/mmcblk0p/sda/'",
+            os.path.join(mount_dir, 'cmdline.txt')]
+
+        print 'Modifying init command line'
+        interactive_console(sed_command)
+
+        print 'Successfully modified! Unmounting.'
+        umount_command = ['sudo', 'umount', mount_dir]
+        interactive_console(umount_command)
+
+        print 'Cleaning up mounted dir'
+
+
+def expand_second_partition(device):
+    """Take the second partition from the thumb drive and expand it."""
+    
+    print 'Deleting the original boot partition from the thumb drive'
+    _delete_partition(device, 1)
+
+    print 'Expanding the partition. Resizing isn\'t worth it. Or obvious to do.'
+    resize_command = ['sudo', 'parted', device.path, 'resizepart', '2', '"-1s"']
+    interactive_console(resize_command)
+    print 'Success!'
+
+
+def polish_drive(device):
+    mount_dir = mkdtemp()
+    mount_command = [
+        'sudo',
+        'mount',
+        device.partitions(full_paths=True)[0],
+        mount_dir]
+
+    print 'Mounting device locally'
+    interactive_console(mount_command)
+
+    print 'Changing password acceptance on ssh policy to "no thanks"'
+    sed_ssh_command = [
+        'sudo',
+        'sed',
+        '-i',
+        's\'/#PasswordAuthentication yes/PasswordAuthentication no/\'',
+        os.path.join(mount_dir, 'etc', 'ssh', 'sshd_config')
+    ]
+    interactive_console(sed_ssh_command)
+
+    print 'Creating a .ssh directory for pi user.'
+    mkdir_command = [
+        'sudo',
+        'mkdir',
+        os.path.join(mount_dir, 'home', 'pi', '.ssh')
+    ]
+    interactive_console(mkdir_command)
+    
+    print 'adding ~/.ssh/id_rsa.pub to ~/.ssh/authorized_keys'
+    authorized_keys_command = [
+        'sudo',
+        'cp',
+        os.path.join(os.path.expanduser('~/'), '.ssh', 'id_rsa.pub'),
+        os.path.join(mount_dir, 'home', 'pi', '.ssh', 'authorized_keys')
+    ]
+    interactive_console(authorized_keys_command)
+
+    print 'Chowning the whole thing as UID=pID'
+    chown_command = [
+        'sudo',
+        'chown',
+        '1000:1000',
+        os.path.join(mount_dir, 'home', 'pi', '.ssh')
+    ]
+    interactive_console(chown_command)
+
+    print 'Stricting up perms on .ssh dir as well'
+    chown_command = [
+        'sudo',
+        'chmod',
+        '700',
+        os.path.join(mount_dir, 'home', 'pi', '.ssh')
+    ]
+    interactive_console(chown_command)
+
+    print 'Good to go! Unmounting'
+    umount_command = ['sudo', 'umount', mount_dir]
+    interactive_console(umount_command)
+
+    print 'All done!'
