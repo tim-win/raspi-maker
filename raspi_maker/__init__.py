@@ -61,7 +61,7 @@ def main(args):
     expand_second_partition(thumb_drive)
 
     print 'Polishing thumb drive for final ready to go status.'
-    polish_drive(thumb_drive)
+    polish_drive(thumb_drive, ssid, psk)
 
     print 'Your shit is done!'
     print 'Plug it into a pi and you\'re ready to rock.'

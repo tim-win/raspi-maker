@@ -125,33 +125,35 @@ def copy_boot_partition(source, target):
 @PromptOnError
 def update_sdcard_boot_commands(device):
     """Make the SD Card point to the thumb drive on boot."""
-    with mkdtemp() as mount_dir:
-        boot_partition = device.partitions(full_paths=True)[0]
-        
-        mount_command = ['sudo', 'mount', boot_partition, mount_dir]
+    mount_dir = mkdtemp()
 
-        print 'Mounting SD Card partition {0} to temp directory {1}'.format(
-            boot_partition, mount_dir)
-        interactive_console(mount_command)
+    boot_partition = device.partitions(full_paths=True)[0]
+    
+    mount_command = ['sudo', 'mount', boot_partition, mount_dir]
 
-        # Note- this sed command is what the target mounts will look like
-        # I'm not messing with the blk_ids of our devices as we know them
-        # here.
-        sed_command = [
-            'sudo',
-            'sed',
-            '-i',
-            "s'/mmcblk0p2/sda2/'",
-            os.path.join(mount_dir, 'cmdline.txt')]
+    print 'Mounting SD Card partition {0} to temp directory {1}'.format(
+        boot_partition, mount_dir)
+    interactive_console(mount_command)
 
-        print 'Modifying init command line'
-        interactive_console(sed_command)
+    # Note- this sed command is what the target mounts will look like
+    # I'm not messing with the blk_ids of our devices as we know them
+    # here.
+    sed_command = [
+        'sudo',
+        'sed',
+        '-i',
+        "s/mmcblk0p2/sda2/",
+        os.path.join(mount_dir, 'cmdline.txt')]
 
-        print 'Successfully modified! Unmounting.'
-        umount_command = ['sudo', 'umount', mount_dir]
-        interactive_console(umount_command)
+    print 'Modifying init command line'
+    console(sed_command)
 
-        print 'Cleaning up mounted dir'
+    print 'Successfully modified! Unmounting.'
+    umount_command = ['sudo', 'umount', mount_dir]
+    interactive_console(umount_command)
+
+    print 'Cleaning up mounted dir'
+    os.rmdir(mount_dir)    
 
 
 def expand_second_partition(device):
@@ -247,8 +249,17 @@ def polish_drive(device, ssid, psk):
             f.write('\n')
         interactive_console(['sudo', 'chown', '0:0', supplicant])
 
+    print 'Enabling SSH service on boot'
+    ssh_service_path = os.path.join(mount_dir, 'lib', 'systemd', 'system', 'ssh.service')
+    symlink_path = os.path.join(mount_dir, 'etc', 'systemd', 'system', 'multi-user.target.wants', 'ssh.service')
+    enable_command = ['sudo', 'ln', '-s', ssh_service_path, symlink_path]
+    interactive_console(enable_command)
+
     print 'Good to go! Unmounting'
     umount_command = ['sudo', 'umount', mount_dir]
     interactive_console(umount_command)
+
+    print 'Removing temp dir'
+    os.rmdir(mount_dir)
 
     print 'All done!'
