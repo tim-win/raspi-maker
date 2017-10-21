@@ -2,7 +2,8 @@
 import os
 
 IMAGE_NAME = '2016-11-25-raspbian-jessie.img'
-PATH = '~/Downloads/'
+IMAGE_NAME = '2017-08-16-raspbian-stretch.img'
+PATH = '~/Documents/'
 
 
 def check_image():
