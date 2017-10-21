@@ -66,3 +66,15 @@ Run the `./run.py` command and then follow the interactive
 prompts. It takes some guesses about your system (that I
 use to protect my own), like it won't let you mess with the
 `sda` device by accident.
+
+# The Future
+Some of this will be made obsolete once RPis have proper
+boot-from-USB support, which has been in testing since for-
+ever. That said, I still use this regularly to make quickly
+bootstrapped RPis, and see a couple of improvements that
+I'd like to tackle:
+
+* Clean up more of the hard codes
+* Support more than just Raspbian
+* Turn into a proper python package and publish to PyPi
+
