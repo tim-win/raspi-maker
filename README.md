@@ -1,7 +1,8 @@
 # Raspi-maker
 
 Generate both a SD card and a thumb drive with customizations
-before booting your RPi for the first time.
+before booting your RPi for the first time using arbitrary
+linux disk images.t 
 
 ## Problem Space
 Two primary concerns drove this work. First, getting an RPi
