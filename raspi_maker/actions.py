@@ -8,9 +8,9 @@ from .console import interactive_console
 
 
 def _delete_partition(device, number):
-    print 'Deleting {0} partition #{1}'.format(device.path, number)
+    print('Deleting {0} partition #{1}'.format(device.path, number))
     console(['sudo', 'parted', device.path, 'rm', str(number)])
-    
+
 
 @PromptOnError
 def clear_device(device):
@@ -18,7 +18,7 @@ def clear_device(device):
 
     To do this, we count the partitions, and delete them one by one.
     This is done by running:
-        
+
         $ sudo parted <path_to_device> rm <partition_number>
 
     Where path_to_device is something like /dev/mmcblk0 and partition_number
@@ -51,7 +51,7 @@ def clear_device(device):
 
     partitions = device.partitions()
 
-    for partition in xrange(1,1+len(partitions)):
+    for partition in range(1, 1+len(partitions)):
         _delete_partition(device, partition)
 
     return True
@@ -69,7 +69,7 @@ def flash_image(disk_image, device):
     # why check output? because then you can do the cool
     # dd | pv | dd trick. '|pv|'' is awesome stdout.
     output = check_output(populated_cmd, shell=True)
-    print output
+    print(output)
 
 
 @PromptOnError
@@ -81,7 +81,7 @@ def copy_boot_partition(source, target):
     Creates a partition on target device, with:
         label: boot
         size: equivalent to source device's partition 1
-        
+
     """
     boot_source = source.partition_specs(1)
 
@@ -108,7 +108,7 @@ def copy_boot_partition(source, target):
         target=target.partitions(full_paths=True)[0])
 
     print 'Copying the boot fs over.'
-    output = check_output(populated_cmd, shell=True)    
+    output = check_output(populated_cmd, shell=True)
     print output
 
     e2label_command = [
@@ -128,7 +128,7 @@ def update_sdcard_boot_commands(device):
     mount_dir = mkdtemp()
 
     boot_partition = device.partitions(full_paths=True)[0]
-    
+
     mount_command = ['sudo', 'mount', boot_partition, mount_dir]
 
     print 'Mounting SD Card partition {0} to temp directory {1}'.format(
@@ -153,12 +153,12 @@ def update_sdcard_boot_commands(device):
     interactive_console(umount_command)
 
     print 'Cleaning up mounted dir'
-    os.rmdir(mount_dir)    
+    os.rmdir(mount_dir)
 
 
 def expand_second_partition(device):
     """Take the second partition from the thumb drive and expand it."""
-    
+
     print 'Deleting the original boot partition from the thumb drive'
     _delete_partition(device, 1)
 
@@ -177,7 +177,7 @@ def expand_second_partition(device):
     print 'Success!'
 
 
-def polish_drive(device, ssid, psk):
+def polish_drive(device, ssid, psk, user, hostname):
     mount_dir = mkdtemp()
     mount_command = [
         'sudo',
@@ -205,7 +205,7 @@ def polish_drive(device, ssid, psk):
         os.path.join(mount_dir, 'home', 'pi', '.ssh')
     ]
     interactive_console(mkdir_command)
-    
+
     print 'adding ~/.ssh/id_rsa.pub to ~/.ssh/authorized_keys'
     authorized_keys_command = [
         'sudo',
@@ -238,7 +238,7 @@ def polish_drive(device, ssid, psk):
         print 'Throwing the wireless info into the wpa_supplicant.conf'
         supplicant = os.path.join(mount_dir, 'etc', 'wpa_supplicant', 'wpa_supplicant.conf')
         me = os.getlogin()
-        
+
         interactive_console(['sudo', 'chown', me, supplicant])
         with open(supplicant, 'a') as f:
             f.write('\n')
@@ -248,6 +248,77 @@ def polish_drive(device, ssid, psk):
             f.write('}\n')
             f.write('\n')
         interactive_console(['sudo', 'chown', '0:0', supplicant])
+
+    print 'Killing the pi user. Time to die!'
+    print '...'
+    print 'Removing pi name from etc/passwd'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/pi/{0}/'.format(user),
+        os.path.join(mount_dir, 'etc', 'passwd')
+    ])
+
+    print 'Moving pi directory'
+    interactive_console([
+        'sudo',
+        'mv',
+        os.path.join(mount_dir, 'home', 'pi'),
+        os.path.join(mount_dir, 'home', user)
+    ])
+
+    print 'Changing hostname',
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/raspberrypi/{0}/'.format(hostname)
+        os.path.join(mount_dir, 'etc', 'hostname')
+    ])
+
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/raspberrypi/{0}/'.format(hostname)
+        os.path.join(mount_dir, 'etc', 'hosts')
+    ])
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/raspberrypi/{0}/'.format(hostname)
+        os.path.join(mount_dir, 'etc', 'hosts')
+    ])
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/raspberrypi/{0}/'.format(hostname)
+        os.path.join(mount_dir, 'etc', 'hosts')
+    ])
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/raspberrypi/{0}/'.format(hostname)
+        os.path.join(mount_dir, 'etc', 'ssh', 'ssh_host_rsa_key.pub')
+    ])
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/raspberrypi/{0}/'.format(hostname)
+        os.path.join(mount_dir, 'etc', 'ssh', 'ssh_host_ecdsa_key.pub')
+    ])
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/raspberrypi/{0}/'.format(hostname)
+        os.path.join(mount_dir, 'etc', 'ssh', 'ssh_host_dsa_key.pub')
+    ])
 
     print 'Enabling SSH service on boot'
     ssh_service_path = os.path.join(mount_dir, 'lib', 'systemd', 'system', 'ssh.service')

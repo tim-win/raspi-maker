@@ -20,7 +20,7 @@ def main(args):
     devices = dict((dev, Device(dev)) for dev in get_devices())
 
     print_devices(devices)
-    
+
     if file_config_exists():
         print 'Using the config file!'
         sd_card, thumb_drive, ssid, psk = parse_config()
@@ -31,6 +31,9 @@ def main(args):
         sd_card, thumb_drive = devices_prompt(devices)
         ssid = freestyle_prompt('What is your wireless ssid?')
         psk = freestyle_prompt('What is your wireless password?')
+
+    user = freestyle_prompt('What is the username you want instead of pi?')
+    hostname = freestyle_prompt('What is your preferred hostname?')
 
     check_for_root_device(sd_card.blk_id, thumb_drive.blk_id)
 
@@ -61,7 +64,7 @@ def main(args):
     expand_second_partition(thumb_drive)
 
     print 'Polishing thumb drive for final ready to go status.'
-    polish_drive(thumb_drive, ssid, psk)
+    polish_drive(thumb_drive, ssid, psk, user, hostname)
 
     print 'Your shit is done!'
     print 'Plug it into a pi and you\'re ready to rock.'

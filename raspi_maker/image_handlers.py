@@ -3,6 +3,9 @@ import os
 
 IMAGE_NAME = '2016-11-25-raspbian-jessie.img'
 IMAGE_NAME = '2017-08-16-raspbian-stretch.img'
+IMAGE_NAME = '2017-09-07-raspbian-stretch.img'
+# IMAGE_NAME = '2017-06-21-octopi-jessie-lite-0.14.0.img'
+# IMAGE_NAME = 'retropie-4.3-rpi2_rpi3.img'
 PATH = '~/Documents/'
 
 
