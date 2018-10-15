@@ -138,11 +138,20 @@ def update_sdcard_boot_commands(device):
     # Note- this sed command is what the target mounts will look like
     # I'm not messing with the blk_ids of our devices as we know them
     # here.
+
     sed_command = [
         'sudo',
         'sed',
         '-i',
-        "s/mmcblk0p2/sda2/",
+        '-E',
+        's#root=[^ ]+#root=/dev/sda2#'
+        os.path.join(mount_dir, 'cmdline.txt')]
+
+    sed_command = [
+        'sudo',
+        'sed',
+        '-i',
+        's# init=/usr/lib/raspi-config/init_resize.sh##'
         os.path.join(mount_dir, 'cmdline.txt')]
 
     print 'Modifying init command line'
@@ -193,7 +202,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         'sudo',
         'sed',
         '-i',
-        's\'/#PasswordAuthentication yes/PasswordAuthentication no/\'',
+        's/#PasswordAuthentication yes/PasswordAuthentication no/',
         os.path.join(mount_dir, 'etc', 'ssh', 'sshd_config')
     ]
     interactive_console(sed_ssh_command)
@@ -259,7 +268,64 @@ def polish_drive(device, ssid, psk, user, hostname):
         's/pi/{0}/'.format(user),
         os.path.join(mount_dir, 'etc', 'passwd')
     ])
-
+    print 'Steal pis password for user'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/pi/{0}/'.format(user),
+        os.path.join(mount_dir, 'etc', 'shadow')
+    ])
+    print 'Removing pi group from etc/passwd'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/pi/{0}/'.format(user),
+        os.path.join(mount_dir, 'etc', 'passwd')
+    ])
+    print 'Removing pi group from etc/sudoers.d/010_pi-nopasswd'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/pi/{0}/'.format(user),
+        os.path.join(mount_dir, 'etc', 'sudoers.d', '010_pi-nopasswd')
+    ])
+    print 'Removing pi group from etc/group'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/:pi/:{0}/'.format(user),
+        os.path.join(mount_dir, 'etc', 'group')
+    ])
+    print 'Removing pi group from etc/group, again'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-E',
+        '-i',
+        's#^pi\:x\:1000#{0}:x:1000:#'.format(user),
+        os.path.join(mount_dir, 'etc', 'group')
+    ])
+    print 'Removing pi group from etc/gshadow'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/:pi/:{0}/'.format(user),
+        os.path.join(mount_dir, 'etc', 'gshadow')
+    ])
+    print 'Removing pi group from etc/gshadow, again'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-E',
+        '-i',
+        's#^pi\:!\:\:#{0}:!::#'.format(user),
+        os.path.join(mount_dir, 'etc', 'gshadow')
+    ])
     print 'Moving pi directory'
     interactive_console([
         'sudo',
@@ -268,12 +334,26 @@ def polish_drive(device, ssid, psk, user, hostname):
         os.path.join(mount_dir, 'home', user)
     ])
 
+    print 'Autologging in new user'
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        's/pi/{0}/'.format(user),
+        os.path.join(
+            mount_dir,
+            'etc',
+            'systemd',
+            'system',
+            'autologin@.service')
+    ])
+
     print 'Changing hostname',
     interactive_console([
         'sudo',
         'sed',
         '-i',
-        's/raspberrypi/{0}/'.format(hostname)
+        's/raspberrypi/{0}/'.format(hostname),
         os.path.join(mount_dir, 'etc', 'hostname')
     ])
 
@@ -281,43 +361,62 @@ def polish_drive(device, ssid, psk, user, hostname):
         'sudo',
         'sed',
         '-i',
-        's/raspberrypi/{0}/'.format(hostname)
+        's/raspberrypi/{0}/'.format(hostname),
         os.path.join(mount_dir, 'etc', 'hosts')
     ])
     interactive_console([
         'sudo',
         'sed',
         '-i',
-        's/raspberrypi/{0}/'.format(hostname)
+        's/raspberrypi/{0}/'.format(hostname),
         os.path.join(mount_dir, 'etc', 'hosts')
     ])
     interactive_console([
         'sudo',
         'sed',
         '-i',
-        's/raspberrypi/{0}/'.format(hostname)
+        's/raspberrypi/{0}/'.format(hostname),
         os.path.join(mount_dir, 'etc', 'hosts')
     ])
     interactive_console([
         'sudo',
         'sed',
         '-i',
-        's/raspberrypi/{0}/'.format(hostname)
+        's/raspberrypi/{0}/'.format(hostname),
         os.path.join(mount_dir, 'etc', 'ssh', 'ssh_host_rsa_key.pub')
     ])
     interactive_console([
         'sudo',
         'sed',
         '-i',
-        's/raspberrypi/{0}/'.format(hostname)
+        's/raspberrypi/{0}/'.format(hostname),
         os.path.join(mount_dir, 'etc', 'ssh', 'ssh_host_ecdsa_key.pub')
     ])
     interactive_console([
         'sudo',
         'sed',
         '-i',
-        's/raspberrypi/{0}/'.format(hostname)
+        's/raspberrypi/{0}/'.format(hostname),
         os.path.join(mount_dir, 'etc', 'ssh', 'ssh_host_dsa_key.pub')
+    ])
+
+    print('Fix the /boot fstab partition')
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        '-E',
+        's#PARTUUID=.*-01#/dev/mmcblk0p1#',
+        os.path.join(mount_dir, 'etc', 'fstab')
+    ])
+    print('Fix the root fstab partition')
+    interactive_console([
+        'sudo',
+        'sed',
+        '-i',
+        '-E',
+        's#PARTUUID=.*-02#/dev/sda2#',
+        os.path.join(mount_dir, 'etc', 'fstab')
     ])
 
     print 'Enabling SSH service on boot'
