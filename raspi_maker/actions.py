@@ -107,9 +107,9 @@ def copy_boot_partition(source, target):
         source=source.partitions(full_paths=True)[0],
         target=target.partitions(full_paths=True)[0])
 
-    print 'Copying the boot fs over.'
+    print('Copying the boot fs over.')
     output = check_output(populated_cmd, shell=True)
-    print output
+    print(output)
 
     e2label_command = [
         'sudo',
@@ -118,7 +118,7 @@ def copy_boot_partition(source, target):
         'boot'
     ]
 
-    print 'Labeling filesystem.'
+    print('Labeling filesystem.')
     interactive_console(e2label_command)
 
 
@@ -131,8 +131,7 @@ def update_sdcard_boot_commands(device):
 
     mount_command = ['sudo', 'mount', boot_partition, mount_dir]
 
-    print 'Mounting SD Card partition {0} to temp directory {1}'.format(
-        boot_partition, mount_dir)
+    print(f'Mounting SD Card partition {boot_partition} to temp directory {mount_dir}')
     interactive_console(mount_command)
 
     # Note- this sed command is what the target mounts will look like
@@ -144,46 +143,46 @@ def update_sdcard_boot_commands(device):
         'sed',
         '-i',
         '-E',
-        's#root=[^ ]+#root=/dev/sda2#'
+        's#root=[^ ]+#root=/dev/sda2#',
         os.path.join(mount_dir, 'cmdline.txt')]
-
+    console(sed_command)
     sed_command = [
         'sudo',
         'sed',
         '-i',
-        's# init=/usr/lib/raspi-config/init_resize.sh##'
+        's# init=/usr/lib/raspi-config/init_resize.sh##',
         os.path.join(mount_dir, 'cmdline.txt')]
 
-    print 'Modifying init command line'
+    print('Modifying init command line')
     console(sed_command)
 
-    print 'Successfully modified! Unmounting.'
+    print('Successfully modified! Unmounting.')
     umount_command = ['sudo', 'umount', mount_dir]
     interactive_console(umount_command)
 
-    print 'Cleaning up mounted dir'
+    print('Cleaning up mounted dir')
     os.rmdir(mount_dir)
 
 
 def expand_second_partition(device):
     """Take the second partition from the thumb drive and expand it."""
 
-    print 'Deleting the original boot partition from the thumb drive'
+    print('Deleting the original boot partition from the thumb drive')
     _delete_partition(device, 1)
 
-    print 'Expanding the partition. Resizing isn\'t worth it. Or obvious to do.'
+    print('Expanding the partition. Resizing isn\'t worth it. Or obvious to do.')
     resize_command = ['sudo', 'parted', device.path, 'resizepart', '2', '"-1s"']
     interactive_console(resize_command)
 
-    print 'Fixing the nibbly bits for the partition itself'
+    print('Fixing the nibbly bits for the partition itself')
     target_partition = device.partitions(full_paths=True)[0]
     interactive_console(['sudo', 'e2fsck', '-f', target_partition])
 
-    print 'Fixing ext4 so it goes all the way to the end'
+    print('Fixing ext4 so it goes all the way to the end')
     target_end = device.partition_specs(2)['End']
     interactive_console(['sudo', 'resize2fs', target_partition, target_end])
 
-    print 'Success!'
+    print('Success!')
 
 
 def polish_drive(device, ssid, psk, user, hostname):
@@ -194,10 +193,10 @@ def polish_drive(device, ssid, psk, user, hostname):
         device.partitions(full_paths=True)[0],
         mount_dir]
 
-    print 'Mounting device locally'
+    print('Mounting device locally')
     interactive_console(mount_command)
 
-    print 'Changing password acceptance on ssh policy to "no thanks"'
+    print('Changing password acceptance on ssh policy to "no thanks"')
     sed_ssh_command = [
         'sudo',
         'sed',
@@ -207,7 +206,7 @@ def polish_drive(device, ssid, psk, user, hostname):
     ]
     interactive_console(sed_ssh_command)
 
-    print 'Creating a .ssh directory for pi user.'
+    print('Creating a .ssh directory for pi user.')
     mkdir_command = [
         'sudo',
         'mkdir',
@@ -215,7 +214,7 @@ def polish_drive(device, ssid, psk, user, hostname):
     ]
     interactive_console(mkdir_command)
 
-    print 'adding ~/.ssh/id_rsa.pub to ~/.ssh/authorized_keys'
+    print('adding ~/.ssh/id_rsa.pub to ~/.ssh/authorized_keys')
     authorized_keys_command = [
         'sudo',
         'cp',
@@ -224,7 +223,7 @@ def polish_drive(device, ssid, psk, user, hostname):
     ]
     interactive_console(authorized_keys_command)
 
-    print 'Chowning the whole thing as UID=pID'
+    print('Chowning the whole thing as UID=pID')
     chown_command = [
         'sudo',
         'chown',
@@ -234,7 +233,7 @@ def polish_drive(device, ssid, psk, user, hostname):
     ]
     interactive_console(chown_command)
 
-    print 'Stricting up perms on .ssh dir as well'
+    print('Stricting up perms on .ssh dir as well')
     chown_command = [
         'sudo',
         'chmod',
@@ -244,7 +243,7 @@ def polish_drive(device, ssid, psk, user, hostname):
     interactive_console(chown_command)
 
     if ssid and psk:
-        print 'Throwing the wireless info into the wpa_supplicant.conf'
+        print('Throwing the wireless info into the wpa_supplicant.conf')
         supplicant = os.path.join(mount_dir, 'etc', 'wpa_supplicant', 'wpa_supplicant.conf')
         me = os.getlogin()
 
@@ -258,9 +257,9 @@ def polish_drive(device, ssid, psk, user, hostname):
             f.write('\n')
         interactive_console(['sudo', 'chown', '0:0', supplicant])
 
-    print 'Killing the pi user. Time to die!'
-    print '...'
-    print 'Removing pi name from etc/passwd'
+    print('Killing the pi user. Time to die!')
+    print('...')
+    print('Removing pi name from etc/passwd')
     interactive_console([
         'sudo',
         'sed',
@@ -268,7 +267,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's/pi/{0}/'.format(user),
         os.path.join(mount_dir, 'etc', 'passwd')
     ])
-    print 'Steal pis password for user'
+    print('Steal pis password for user')
     interactive_console([
         'sudo',
         'sed',
@@ -276,7 +275,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's/pi/{0}/'.format(user),
         os.path.join(mount_dir, 'etc', 'shadow')
     ])
-    print 'Removing pi group from etc/passwd'
+    print('Removing pi group from etc/passwd')
     interactive_console([
         'sudo',
         'sed',
@@ -284,7 +283,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's/pi/{0}/'.format(user),
         os.path.join(mount_dir, 'etc', 'passwd')
     ])
-    print 'Removing pi group from etc/sudoers.d/010_pi-nopasswd'
+    print('Removing pi group from etc/sudoers.d/010_pi-nopasswd')
     interactive_console([
         'sudo',
         'sed',
@@ -292,7 +291,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's/pi/{0}/'.format(user),
         os.path.join(mount_dir, 'etc', 'sudoers.d', '010_pi-nopasswd')
     ])
-    print 'Removing pi group from etc/group'
+    print('Removing pi group from etc/group')
     interactive_console([
         'sudo',
         'sed',
@@ -300,7 +299,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's/:pi/:{0}/'.format(user),
         os.path.join(mount_dir, 'etc', 'group')
     ])
-    print 'Removing pi group from etc/group, again'
+    print('Removing pi group from etc/group, again')
     interactive_console([
         'sudo',
         'sed',
@@ -309,7 +308,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's#^pi\:x\:1000#{0}:x:1000:#'.format(user),
         os.path.join(mount_dir, 'etc', 'group')
     ])
-    print 'Removing pi group from etc/gshadow'
+    print('Removing pi group from etc/gshadow')
     interactive_console([
         'sudo',
         'sed',
@@ -317,7 +316,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's/:pi/:{0}/'.format(user),
         os.path.join(mount_dir, 'etc', 'gshadow')
     ])
-    print 'Removing pi group from etc/gshadow, again'
+    print('Removing pi group from etc/gshadow, again')
     interactive_console([
         'sudo',
         'sed',
@@ -326,7 +325,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         's#^pi\:!\:\:#{0}:!::#'.format(user),
         os.path.join(mount_dir, 'etc', 'gshadow')
     ])
-    print 'Moving pi directory'
+    print('Moving pi directory')
     interactive_console([
         'sudo',
         'mv',
@@ -334,7 +333,7 @@ def polish_drive(device, ssid, psk, user, hostname):
         os.path.join(mount_dir, 'home', user)
     ])
 
-    print 'Autologging in new user'
+    print('Autologging in new user')
     interactive_console([
         'sudo',
         'sed',
@@ -348,7 +347,7 @@ def polish_drive(device, ssid, psk, user, hostname):
             'autologin@.service')
     ])
 
-    print 'Changing hostname',
+    print('Changing hostname',)
     interactive_console([
         'sudo',
         'sed',
@@ -419,17 +418,17 @@ def polish_drive(device, ssid, psk, user, hostname):
         os.path.join(mount_dir, 'etc', 'fstab')
     ])
 
-    print 'Enabling SSH service on boot'
+    print('Enabling SSH service on boot')
     ssh_service_path = os.path.join(mount_dir, 'lib', 'systemd', 'system', 'ssh.service')
     symlink_path = os.path.join(mount_dir, 'etc', 'systemd', 'system', 'multi-user.target.wants', 'ssh.service')
     enable_command = ['sudo', 'ln', '-s', ssh_service_path, symlink_path]
     interactive_console(enable_command)
 
-    print 'Good to go! Unmounting'
+    print('Good to go! Unmounting')
     umount_command = ['sudo', 'umount', mount_dir]
     interactive_console(umount_command)
 
-    print 'Removing temp dir'
+    print('Removing temp dir')
     os.rmdir(mount_dir)
 
-    print 'All done!'
+    print('All done!')

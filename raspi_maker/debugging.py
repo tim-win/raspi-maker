@@ -12,8 +12,8 @@ class PromptOnError(object):
         except Exception as e:
             traceback.print_exc()
 
-            print 'Falling back to prompt to try live fix.'
-            print 'c to continue when things look ok again.'
-            print 'exit() to gtfo and cancel.'
+            print('Falling back to prompt to try live fix.')
+            print('c to continue when things look ok again.')
+            print('exit() to gtfo and cancel.')
 
             pdb.set_trace()

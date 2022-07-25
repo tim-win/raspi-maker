@@ -1,6 +1,6 @@
 """Configure it just, just right."""
-from ConfigParser import ConfigParser
-from ConfigParser import NoSectionError
+from configparser import ConfigParser
+from configparser import NoSectionError
 import os
 
 

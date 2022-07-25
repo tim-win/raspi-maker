@@ -2,7 +2,7 @@
 """Helper Functions for the file system."""
 import os
 from subprocess import Popen, PIPE, STDOUT
-from console import console
+from .console import console
 
 
 class Device(object):
@@ -32,13 +32,13 @@ class Device(object):
         bool : True if successful.
         `"""
         for mount in self.mount_points:
-            print 'Unmounting {0}'.format(mount)
+            print('Unmounting {0}'.format(mount))
             p = Popen(
                 ['sudo', 'umount', mount],
                 stdout=PIPE,
                 stderr=STDOUT)  # stdout=PIPE makes this line blocking.
             p.communicate()
-        print True
+        print(True)
 
     @property
     def mount_points(self):
@@ -181,7 +181,7 @@ def _get_model(blk_id):
 def _get_lsblk_output():
     """This is what we use to get our partitions."""
     p = Popen(['lsblk'], stdout=PIPE)
-    return p.stdout.read()
+    return p.stdout.read().decode('utf8')
 
     
 def _get_partitions(lsblk_output, blk_id, full_paths=False):
@@ -268,7 +268,7 @@ def _device_partitions(device_path):
         cmd,
         stdout=PIPE)
 
-    return p.stdout.read()
+    return p.stdout.read().decode('utf8')
 
 
 def _partition_details(device_unit_info, number):

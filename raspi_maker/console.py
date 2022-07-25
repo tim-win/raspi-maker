@@ -4,8 +4,8 @@ from subprocess import Popen
 from subprocess import PIPE
 from subprocess import STDOUT
 
-from Queue import Queue
-from Queue import Empty
+from queue import Queue
+from queue import Empty
 
 from threading import Thread
 
@@ -51,7 +51,7 @@ def read_queue(queue):
         # Non blocking queue population
         while True:
             # Raises Queue.Empty on empty queue
-            output += queue.get_nowait()
+            output += queue.get_nowait().decode('utf8')
 
     # Catch and Return
     except Empty:
@@ -64,8 +64,7 @@ def console(cmd, blocking=True, shell=True):
         while open_pipe.poll() is None:
             time.sleep(0.2)
 
-
-    return open_pipe.stdout.read()
+    return open_pipe.stdout.read().decode('utf8')
 
 
 @PromptOnError
@@ -85,7 +84,7 @@ def interactive_console(cmd_list, inputs=None, verbose=True):
     bool : True if successful
     """
     if verbose:
-        print 'Running:', ' '.join(cmd_list)
+        print('Running:', ' '.join(cmd_list))
     process = Popen(cmd_list, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     stdout_queue = Queue()
     stdout_thread = Thread(target=enqueue, args=(process.stdout, stdout_queue))
@@ -101,11 +100,11 @@ def interactive_console(cmd_list, inputs=None, verbose=True):
     while process.poll() is None:
         output = read_queue(stdout_queue)
         if output:
-            print output
+            print(output)
         time.sleep(1)
 
     output = read_queue(stdout_queue)
     if output:
-        print output
+        print(output)
 
     return True
